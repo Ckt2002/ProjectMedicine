@@ -11,7 +11,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/detail-order-supplier")
+@RequestMapping("api/detail-order-supplier")
 public class DetailOrderSupplierController {
 
     @Autowired
@@ -21,6 +21,12 @@ public class DetailOrderSupplierController {
     public ResponseEntity<List<DetailOrderSupplier>> getAllDetailOrderSuppliers() {
         List<DetailOrderSupplier> detailOrderSuppliers = detailOrderSupplierService.getAllDetailOrderSuppliers();
         return new ResponseEntity<>(detailOrderSuppliers, HttpStatus.OK);
+    }
+
+    @GetMapping("/{orderSupplierId}")
+    public ResponseEntity<List<DetailOrderSupplier>> getDetailsByOrderSupplierId(@PathVariable String orderSupplierId) {
+        List<DetailOrderSupplier> details = detailOrderSupplierService.getDetailsByOrderSupplierId(orderSupplierId);
+        return new ResponseEntity<>(details, HttpStatus.OK);
     }
 
     @GetMapping("/{orderSupplierId}/{medicineId}")

@@ -60,6 +60,16 @@ public class OrderServiceImpl implements OrderService {
         return orderRepository.findByStatus(status);
     }
 
+    @Override
+    public List<Order> getOrdersByStatusAndAccountId(String status, String accountId) {
+        return orderRepository.findByStatusAndAccountUserId(status, accountId);
+    }
+
+    @Override
+    public List<Order> getOrdersByAccountId(String accountId) {
+        return orderRepository.findByAccountUser_Id(accountId);
+    }
+
     private void validateOrderExists(String orderId) {
         if (!orderRepository.existsById(orderId)) {
             throw new IllegalArgumentException("Order not found");

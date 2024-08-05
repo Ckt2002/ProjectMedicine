@@ -1,27 +1,146 @@
-import React from 'react'
-import Head from '../../components/user/Head'
-import Footer from '../../components/user/Footer'
-import { Link } from 'react-router-dom'
+import React, { useEffect, useState } from 'react';
+import axios from 'axios';
+import { useNavigate, Link } from 'react-router-dom';
+import Head from '../../components/user/Head';
+import Footer from '../../components/user/Footer';
+import Notification from './Notification';
 
 function Order() {
+    const [orders, setOrders] = useState([]);
+    const [account, setAccount] = useState("");
+    const [notification, setNotification] = useState({ message: '', type: '' });
+    const navigate = useNavigate();
+
+    useEffect(() => {
+        if (notification.message) {
+            const timer = setTimeout(() => {
+                setNotification({ message: '', type: '' });
+            }, 3000);
+
+            return () => clearTimeout(timer);
+        }
+    }, [notification]);
+
+    const getAccount = async (accountId) => {
+        try {
+            const response = await axios.get(`http://localhost:8080/api/account/${accountId}`, {
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`
+                }
+            });
+            setAccount(response.data);
+        } catch (error) {
+            setNotification({ message: 'There was an error fetching the data!', type: 'error' });
+        }
+    };
+
+    useEffect(() => {
+        const accountId = localStorage.getItem('accountId');
+        if (accountId) {
+            getAccount(accountId);
+        }
+    }, []);
+
+    useEffect(() => {
+        const fetchOrders = async () => {
+            try {
+                const responseOrdered = await axios.get(`http://localhost:8080/api/order/account/${account.id}/status/ordered`, {
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('token')}`
+                    }
+                });
+                const responseConfirmed = await axios.get(`http://localhost:8080/api/order/account/${account.id}/status/confirm`, {
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('token')}`
+                    }
+                });
+
+                // Hợp nhất dữ liệu từ cả hai response
+                const allOrders = [...responseOrdered.data, ...responseConfirmed.data];
+                setOrders(allOrders);
+            } catch (error) {
+                console.error('Error fetching orders:', error);
+            }
+        };
+
+        fetchOrders();
+    }, [account.id]);
+
+    const handleDetailClick = (order) => {
+        navigate('/detailOrder', { state: { order } });
+    };
+
+    const handleCancelOrder = async (order) => {
+        try {
+            // Cập nhật trạng thái của order thành "canceled"
+            const updatedOrder = { ...order, status: 'canceled' };
+            await axios.put(`http://localhost:8080/api/order`, updatedOrder, {
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`
+                }
+            });
+
+            // Lấy chi tiết đơn hàng để cập nhật trạng thái của seri
+            const detailResponse = await axios.get(`http://localhost:8080/api/detail-order/order/${order.id}`, {
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`
+                }
+            });
+            const detailOrders = detailResponse.data;
+
+            // Cập nhật trạng thái của từng seri trong chi tiết đơn hàng lại thành new
+            await Promise.all(detailOrders.map(detail => {
+                const updatedSeri = { ...detail.seri, status: 'new', updatedDate: new Date().toISOString() };
+                return axios.put(`http://localhost:8080/api/seri/${detail.seri.id}`, updatedSeri, {
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('token')}`
+                    }
+                });
+            }));
+
+            // Thông báo thành công và cập nhật danh sách orders
+            setNotification({ message: 'Order canceled successfully!', type: 'success' });
+            setOrders(orders.map(o => o.id === order.id ? updatedOrder : o));
+        } catch (error) {
+            console.error('Error canceling order:', error);
+            setNotification({ message: 'There was an error canceling the order!', type: 'error' });
+        }
+    };
+
+    const handleRecieveOrder = async (order) => {
+        try {
+            // Cập nhật trạng thái của order
+            const updatedOrder = { ...order, status: 'recieved' };
+            await axios.put(`http://localhost:8080/api/order`, updatedOrder, {
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`
+                }
+            });
+
+            // Thông báo thành công và cập nhật danh sách orders
+            setNotification({ message: 'Order canceled successfully!', type: 'success' });
+            setOrders(orders.map(o => o.id === order.id ? updatedOrder : o));
+        } catch (error) {
+            console.error('Error canceling order:', error);
+            setNotification({ message: 'There was an error canceling the order!', type: 'error' });
+        }
+    };
+
     return (
         <div>
             <Head />
-
-            {/* breadcrumb-section  */}
-            <div class="breadcrumb-section breadcrumb-bg">
-                <div class="container">
-                    <div class="row">
-                        <div class="col-lg-8 offset-lg-2 text-center">
-                            <div class="breadcrumb-text">
+            <Notification message={notification.message} type={notification.type} />
+            <div className="breadcrumb-section breadcrumb-bg">
+                <div className="container">
+                    <div className="row">
+                        <div className="col-lg-8 offset-lg-2 text-center">
+                            <div className="breadcrumb-text">
                                 <h1>ORDER</h1>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
-            {/* end breadcrumb section  */}
-
             <div className="cart-section mt-80 mb-80">
                 <div className="container">
                     <div className="row">
@@ -35,65 +154,96 @@ function Order() {
                                             <th className="product-price">Status</th>
                                             <th className="product-image">Updated date</th>
                                             <th className="product-quantity"></th>
+                                            <th className="product-quantity"></th>
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        <tr className="table-body-row">
-                                            <td className="product-name">03/06/2024</td>
-                                            <td className="product-price">$100</td>
-                                            <td className="product-quantity">Recieved</td>
-                                            <td className="product-name">15/06/2024</td>
-                                            <td className="product-total"><Link to="/detailOrder" class="boxed-btn">Detail</Link></td>
-                                        </tr>
-                                        <tr className="table-body-row">
-                                            <td className="product-name">25/06/2024</td>
-                                            <td className="product-price">$85</td>
-                                            <td className="product-quantity">Checking</td>
-                                            <td className="product-name">25/06/2024</td>
-                                            <td className="product-total"><Link to="/detailOrder" class="boxed-btn">Detail</Link></td>
-                                        </tr>
+                                        {Array.isArray(orders) && orders
+                                            .map((order) => (
+                                                <tr className="table-body-row" key={order.id}>
+                                                    <td className="product-name">{new Date(order.orderDate).toLocaleDateString()}</td>
+                                                    <td className="product-price">{order.totalPrice} VND</td>
+                                                    <td className="product-quantity">{order.status}</td>
+                                                    <td className="product-name">{new Date(order.updatedDate).toLocaleDateString()}</td>
+                                                    <td className="product-total">
+                                                        <button onClick={() => handleDetailClick(order)} className="boxed-btn" style={{
+                                                            backgroundColor: '#F28123',
+                                                            color: 'white',
+                                                            borderRadius: '50px',
+                                                            padding: '10px 20px',
+                                                            border: 'none',
+                                                            cursor: 'pointer',
+                                                            transition: 'background-color 0.3s, color 0.3s'
+                                                        }}
+                                                            onMouseEnter={(e) => {
+                                                                e.target.style.backgroundColor = 'white';
+                                                                e.target.style.color = 'black';
+                                                            }}
+                                                            onMouseLeave={(e) => {
+                                                                e.target.style.backgroundColor = '#F28123';
+                                                                e.target.style.color = 'white';
+                                                            }}>
+                                                            Detail
+                                                        </button>
+                                                    </td>
+                                                    {order.status === 'ordered' && (
+                                                        <td className="product-total">
+                                                            <button onClick={() => handleCancelOrder(order)} className="boxed-btn" style={{
+                                                                backgroundColor: '#F28123',
+                                                                color: 'white',
+                                                                borderRadius: '50px',
+                                                                padding: '10px 20px',
+                                                                border: 'none',
+                                                                cursor: 'pointer',
+                                                                transition: 'background-color 0.3s, color 0.3s'
+                                                            }}
+                                                                onMouseEnter={(e) => {
+                                                                    e.target.style.backgroundColor = 'white';
+                                                                    e.target.style.color = 'black';
+                                                                }}
+                                                                onMouseLeave={(e) => {
+                                                                    e.target.style.backgroundColor = '#F28123';
+                                                                    e.target.style.color = 'white';
+                                                                }}>Cancel</button>
+                                                        </td>
+                                                    )}
+
+                                                    {order.status === 'confirm' && (
+                                                        <td className="product-total">
+                                                            <button
+                                                                onClick={() => handleRecieveOrder(order)}
+                                                                className="boxed-btn" style={{
+                                                                    backgroundColor: '#F28123',
+                                                                    color: 'white',
+                                                                    borderRadius: '50px',
+                                                                    padding: '10px 20px',
+                                                                    border: 'none',
+                                                                    cursor: 'pointer',
+                                                                    transition: 'background-color 0.3s, color 0.3s'
+                                                                }}
+                                                                onMouseEnter={(e) => {
+                                                                    e.target.style.backgroundColor = 'white';
+                                                                    e.target.style.color = 'black';
+                                                                }}
+                                                                onMouseLeave={(e) => {
+                                                                    e.target.style.backgroundColor = '#F28123';
+                                                                    e.target.style.color = 'white';
+                                                                }}>Recieved</button>
+                                                        </td>
+                                                    )}
+                                                </tr>
+                                            ))
+                                        }
                                     </tbody>
                                 </table>
                             </div>
                         </div>
-
-                        {/* <div className="col-lg-4">
-                            <div className="total-section">
-                                <table className="total-table">
-                                    <thead className="total-table-head">
-                                        <tr className="table-total-row">
-                                            <th>Total</th>
-                                            <th>Price</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        <tr className="total-data">
-                                            <td><strong>Subtotal: </strong></td>
-                                            <td>$500</td>
-                                        </tr>
-                                        <tr className="total-data">
-                                            <td><strong>Shipping: </strong></td>
-                                            <td>$45</td>
-                                        </tr>
-                                        <tr className="total-data">
-                                            <td><strong>Total: </strong></td>
-                                            <td>$545</td>
-                                        </tr>
-                                    </tbody>
-                                </table>
-                                <div className="cart-buttons">
-                                    <a href="cart.html" className="boxed-btn">Update Cart</a>
-                                    <a href="checkout.html" className="boxed-btn black">Check Out</a>
-                                </div>
-                            </div>
-                        </div> */}
                     </div>
                 </div>
             </div>
-
             <Footer />
         </div>
-    )
+    );
 }
 
-export default Order
+export default Order;

@@ -42,6 +42,11 @@ public class DetailImportSupplierServiceImpl implements DetailImportSupplierServ
         detailImportSupplierRepository.deleteById(id);
     }
 
+    @Override
+    public List<DetailImportSupplier> getDetailImportSupplierByImportSupplierId(String importSupplierId) {
+        return detailImportSupplierRepository.findByImportSupplierId(importSupplierId);
+    }
+
     private void validateDetailImportSupplierExists(DetailImportSupplierPK id) {
         if (!detailImportSupplierRepository.existsById(id)) {
             throw new IllegalArgumentException("DetailImportSupplier not found");

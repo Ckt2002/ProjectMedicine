@@ -72,9 +72,9 @@ public class DetailOrderController {
         return detailOrderService.getDetailOrdersByIdOrder(idOrder);
     }
 
-    @GetMapping("/count-by-medicine/{medicineId}")
-    public long countDetailOrdersByMedicineId(@PathVariable String medicineId) {
-        return detailOrderService.countDetailOrdersByMedicineId(medicineId);
+    @GetMapping("/count-order-medicine/{orderId}/{medicineId}")
+    public long countDetailOrdersByMedicineId(@PathVariable String orderId, @PathVariable String medicineId) {
+        return detailOrderService.countDetailOrdersByMedicineId(orderId, medicineId);
     }
 
     @DeleteMapping("/order/{orderId}/medicine/{medicineId}")

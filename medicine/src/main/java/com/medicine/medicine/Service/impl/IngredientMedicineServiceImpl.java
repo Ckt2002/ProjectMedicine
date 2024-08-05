@@ -27,6 +27,10 @@ public class IngredientMedicineServiceImpl implements IngredientMedicineService 
 
     @Override
     public IngredientMedicine addIngredientMedicine(IngredientMedicine ingredientMedicine) {
+        IngredientMedicinePK id = ingredientMedicine.getId();
+        if (ingredientMedicineRepository.existsById(id)) {
+            throw new IllegalArgumentException("This ingredient is already associated with the medicine.");
+        }
         return ingredientMedicineRepository.save(ingredientMedicine);
     }
 
@@ -50,6 +54,20 @@ public class IngredientMedicineServiceImpl implements IngredientMedicineService 
     @Override
     public List<IngredientMedicine> findByIdIngredient(Long idIngredient) {
         return ingredientMedicineRepository.findByIdIngredient(idIngredient);
+    }
+
+    @Override
+    public List<IngredientMedicine> searchMedicinesByIngredientName(String ingredientName) {
+        try {
+            List<IngredientMedicine> medicines = ingredientMedicineRepository.findByIngredientName(ingredientName);
+            System.out.println(medicines);
+//            if (medicines.isEmpty()) {
+//                throw new RuntimeException("No medicines found for ingredient: " + ingredientName);
+//            }
+            return medicines;
+        } catch (Exception e) {
+            throw new RuntimeException("Error searching for medicines by ingredient name: " + e.getMessage(), e);
+        }
     }
 
     private void validateIngredientMedicineExists(IngredientMedicinePK id) {

@@ -8,6 +8,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Optional;
 
 @Service
 public class MedicineServiceImpl implements MedicineService {
@@ -62,7 +63,8 @@ public class MedicineServiceImpl implements MedicineService {
     @Override
     public Medicine updateMedicine(Medicine medicine) {
         validateMedicineExists(medicine.getId());
-        if (medicineRepository.findByName(medicine.getName()).isPresent()) {
+        Optional<Medicine> existingMedicine = medicineRepository.findByName(medicine.getName());
+        if (existingMedicine.isPresent() && !existingMedicine.get().getId().equals(medicine.getId())) {
             throw new IllegalArgumentException("Medicine name already exists");
         }
         return medicineRepository.save(medicine);
@@ -72,6 +74,11 @@ public class MedicineServiceImpl implements MedicineService {
     public void deleteMedicine(String id) {
         validateMedicineExists(id);
         medicineRepository.deleteById(id);
+    }
+
+    @Override
+    public List<Medicine> getMedicinesByStatus(String status) {
+        return medicineRepository.findByStatus(status);
     }
 
     private void validateMedicineExists(String id) {

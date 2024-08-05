@@ -17,4 +17,6 @@ public interface MedicineRepository extends JpaRepository<Medicine, String> {
     List<Medicine> findByDosageForm(DosageForm dosageForm);
 
     List<Medicine> findByManufacturer(Manufacturer manufacturer);
+
+    List<Medicine> findByStatus(String status);
 }

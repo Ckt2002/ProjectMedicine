@@ -44,5 +44,7 @@ public class Medicine {
     @ManyToOne
     @JoinColumn(name = "id_medicine_type", nullable = false)
     private MedicineType medicineType;
-}
 
+    @Column(name = "status", nullable = false, length = 10)
+    private String status;
+}

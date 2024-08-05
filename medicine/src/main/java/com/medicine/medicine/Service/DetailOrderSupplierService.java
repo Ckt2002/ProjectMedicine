@@ -15,4 +15,6 @@ public interface DetailOrderSupplierService {
     DetailOrderSupplier updateDetailOrderSupplier(DetailOrderSupplier detailOrderSupplier);
 
     void deleteDetailOrderSupplier(DetailOrderSupplierPK id);
+
+    List<DetailOrderSupplier> getDetailsByOrderSupplierId(String orderSupplierId);
 }

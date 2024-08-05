@@ -51,10 +51,9 @@ public class MedicineTypeController {
         }
     }
 
-    @PutMapping("/{id}")
-    public ResponseEntity<String> updateMedicineType(@PathVariable Long id, @RequestBody MedicineType MedicineType) {
+    @PutMapping
+    public ResponseEntity<String> updateMedicineType(@RequestBody MedicineType MedicineType) {
         try {
-            MedicineType.setId(id);
             MedicineType updatedMedicineType = medicineTypeService.updateMedicineType(MedicineType);
             return new ResponseEntity<>("MedicineType updated successfully", HttpStatus.OK);
         } catch (IllegalArgumentException e) {

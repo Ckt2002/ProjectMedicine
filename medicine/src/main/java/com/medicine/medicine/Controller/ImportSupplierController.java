@@ -35,7 +35,7 @@ public class ImportSupplierController {
     public ResponseEntity<String> addImportSupplier(@RequestBody ImportSupplier importSupplier) {
         try {
             ImportSupplier newImportSupplier = importSupplierService.addImportSupplier(importSupplier);
-            return new ResponseEntity<>("ImportSupplier added successfully", HttpStatus.CREATED);
+            return new ResponseEntity<>(newImportSupplier.getId(), HttpStatus.CREATED);
         } catch (IllegalArgumentException e) {
             return new ResponseEntity<>(e.getMessage(), HttpStatus.BAD_REQUEST);
         }

@@ -38,6 +38,7 @@ public class SupplierServiceImpl implements SupplierService {
             throw new IllegalArgumentException("Supplier name already exists");
         }
         supplier.setId(RandomIdGenerator.generateRandomId());
+        supplier.setStatus("active");
         return supplierRepository.save(supplier);
     }
 
@@ -51,6 +52,11 @@ public class SupplierServiceImpl implements SupplierService {
     public void deleteSupplier(String id) {
         validateSupplierExists(id);
         supplierRepository.deleteById(id);
+    }
+
+    @Override
+    public List<Supplier> getActiveSuppliers() {
+        return supplierRepository.findByStatus("active");
     }
 
     private void validateSupplierExists(String supplierId) {

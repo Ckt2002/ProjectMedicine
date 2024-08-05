@@ -26,9 +26,9 @@ function Footer() {
                             <div className="footer-box pages">
                                 <h2 className="widget-title">Pages</h2>
                                 <ul>
-                                    <li><a href="#">Home</a></li>
-                                    <li><a href="#">About</a></li>
-                                    <li><a href="#">Shop</a></li>
+                                    <li><p>Home</p></li>
+                                    <li><p>About</p></li>
+                                    <li><p>Shop</p></li>
                                 </ul>
                             </div>
                         </div>
@@ -36,10 +36,10 @@ function Footer() {
                             <div className="footer-box subscribe">
                                 <h2 className="widget-title">Subscribe</h2>
                                 <p>Subscribe to our mailing list to get the latest updates.</p>
-                                <form action="index.html">
+                                {/* <form action="index.html">
                                     <input type="email" placeholder="Email" />
                                     <button type="submit"><i className="fas fa-paper-plane"></i></button>
-                                </form>
+                                </form> */}
                             </div>
                         </div>
                     </div>
@@ -49,29 +49,29 @@ function Footer() {
             {/*  end footer  */}
 
             {/*  copyright  */}
-            <div className="copyright">
+            {/* <div className="copyright">
                 <div className="container">
                     <div className="row">
                         <div className="col-lg-6 col-md-12">
-                            <p>Copyrights &copy; 2019 - <a href="#">Imran Hossain</a>,  All Rights Reserved.
+                            <p>Copyrights &copy; 2019 - <p>Imran Hossain</p>,  All Rights Reserved.
                                 <br />
-                                Distributed By - <a href="#">Themewagon</a>
+                                Distributed By - <p>Themewagon</p>
                             </p>
                         </div>
                         <div className="col-lg-6 text-right col-md-12">
                             <div className="social-icons">
                                 <ul>
-                                    <li><a href="#" target="_blank"><i className="fab fa-facebook-f"></i></a></li>
-                                    <li><a href="#" target="_blank"><i className="fab fa-twitter"></i></a></li>
-                                    <li><a href="#" target="_blank"><i className="fab fa-instagram"></i></a></li>
-                                    <li><a href="#" target="_blank"><i className="fab fa-linkedin"></i></a></li>
-                                    <li><a href="#" target="_blank"><i className="fab fa-dribbble"></i></a></li>
+                                    <li><p target="_blank"><i className="fab fa-facebook-f"></i></p></li>
+                                    <li><p target="_blank"><i className="fab fa-twitter"></i></p></li>
+                                    <li><p target="_blank"><i className="fab fa-instagram"></i></p></li>
+                                    <li><p target="_blank"><i className="fab fa-linkedin"></i></p></li>
+                                    <li><p target="_blank"><i className="fab fa-dribbble"></i></p></li>
                                 </ul>
                             </div>
                         </div>
                     </div>
                 </div>
-            </div>
+            </div> */}
             {/*  end copyright  */}
         </div>
     )

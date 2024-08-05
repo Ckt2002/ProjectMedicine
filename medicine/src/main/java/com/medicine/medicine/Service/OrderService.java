@@ -16,4 +16,8 @@ public interface OrderService {
     void deleteOrder(String id);
 
     List<Order> getOrdersByStatus(String status);
+
+    List<Order> getOrdersByStatusAndAccountId(String status, String accountId);
+
+    List<Order> getOrdersByAccountId(String accountId);
 }

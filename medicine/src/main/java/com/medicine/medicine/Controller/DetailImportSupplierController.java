@@ -11,7 +11,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/detail-import-supplier")
+@RequestMapping("/api/detail-import-supplier")
 public class DetailImportSupplierController {
 
     @Autowired
@@ -32,6 +32,12 @@ public class DetailImportSupplierController {
         } catch (IllegalArgumentException e) {
             return new ResponseEntity<>(null, HttpStatus.NOT_FOUND);
         }
+    }
+
+    @GetMapping("/{importSupplierId}")
+    public ResponseEntity<List<DetailImportSupplier>> getDetailImportSupplierByImportSupplierId(@PathVariable String importSupplierId) {
+        List<DetailImportSupplier> details = detailImportSupplierService.getDetailImportSupplierByImportSupplierId(importSupplierId);
+        return ResponseEntity.ok(details);
     }
 
     @PostMapping

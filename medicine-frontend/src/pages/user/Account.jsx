@@ -3,69 +3,83 @@ import axios from 'axios';
 import Head from '../../components/user/Head';
 import Footer from '../../components/user/Footer';
 import { Link, useNavigate } from 'react-router-dom';
-import { ToastContainer, toast } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
+import Notification from './Notification';
 
 function Account() {
-    const [isLoggedIn, setIsLoggedIn] = useState(false);
     const [account, setAccount] = useState(null);
     const [originalAccount, setOriginalAccount] = useState(null);
-    const [test, setTest] = useState(null);
     const [isFormChanged, setIsFormChanged] = useState(false);
+    const [notification, setNotification] = useState({ message: '', type: '' });
     const navigate = useNavigate();
 
     const getAccount = async (accountId) => {
-        await axios.get(`http://localhost:8080/api/account/${accountId}`)
-            .then(response => {
-                setAccount(response.data);
-                setOriginalAccount(response.data);
-            })
-            .catch(error => {
-                toast.error('There was an error fetching the data!', error);
+        try {
+            const response = await axios.get(`http://localhost:8080/api/account/${accountId}`, {
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`
+                }
             });
+            setAccount(response.data);
+            setOriginalAccount(response.data);
+        } catch (error) {
+            setNotification({ message: 'There was an error fetching the data!', type: 'error' });
+        }
     };
 
     useEffect(() => {
         const accountId = localStorage.getItem('accountId');
         if (accountId) {
-            setIsLoggedIn(true);
             getAccount(accountId);
-        } else {
-            setIsLoggedIn(false);
         }
     }, []);
 
     useEffect(() => {
-        console.log("original account: ", originalAccount);
-        console.log("is form changed: ", isFormChanged);
-    }, [account, isFormChanged]);
+        if (notification.message) {
+            const timer = setTimeout(() => {
+                setNotification({ message: '', type: '' });
+            }, 3000);
+
+            return () => clearTimeout(timer);
+        }
+    }, [notification]);
 
     const handleSubmit = async (event) => {
         event.preventDefault();
         if (!account) {
-            toast.error('Account information is missing');
+            setNotification({ message: 'Account information is missing', type: 'error' });
             return;
         }
-        await axios.put('http://localhost:8080/api/account', account)
-            .then(response => {
-                toast.success('Account updated successfully');
-            })
-            .catch(error => {
-                toast.error('There was an error fetching the data!', error);
+        try {
+            const response = await axios.put('http://localhost:8080/api/account', account, {
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`
+                }
             });
-        setOriginalAccount(account);
+            setOriginalAccount(response.data);
+            setIsFormChanged(false);
+            setNotification({ message: 'Account updated successfully!', type: 'success' });
+        } catch (error) {
+            setNotification({ message: 'There was an error updating the data!', type: 'error' });
+        }
     };
 
     const handleLogout = async () => {
         try {
-            const response = await axios.post('http://localhost:8080/api/account/logout', {}, { withCredentials: true });
+            console.log(localStorage.getItem('token'));
+            const response = await axios.post('http://localhost:8080/api/account/logout', {}, {
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`
+                },
+                withCredentials: true
+            });
             if (response.status === 200) {
                 localStorage.removeItem('accountId');
-                setIsLoggedIn(false);
+                localStorage.removeItem('token');
+                localStorage.removeItem('accountRole');
                 navigate('/home');
             }
         } catch (error) {
-            toast.error('Error during logout', error);
+            setNotification({ message: 'Error during logout', type: 'error' });
         }
     };
 
@@ -86,7 +100,7 @@ function Account() {
     return (
         <div>
             <Head />
-            <ToastContainer />
+            <Notification message={notification.message} type={notification.type} />
             <div className="breadcrumb-section breadcrumb-bg">
                 <div className="container">
                     <div className="row">
@@ -129,7 +143,7 @@ function Account() {
                                     <div className="card single-accordion">
                                         <div className="card-header" id="headingOne">
                                             <h5 className="mb-0">
-                                                <button className="btn btn-link" type="button" data-toggle="collapse" data-target="#collapseOne" aria-expanded="true" aria-controls="collapseOne">
+                                                <button className="btn btn-link" aria-expanded="true" aria-controls="collapseOne">
                                                     Account Information
                                                 </button>
                                             </h5>
@@ -157,7 +171,7 @@ function Account() {
                                                                 placeholder="Email"
                                                                 name="email"
                                                                 value={account?.email || ''}
-                                                                onChange={handleChange}
+                                                                readOnly
                                                             />
                                                         </p>
 
@@ -235,7 +249,13 @@ function Account() {
                                             <td><Link to="/order" className="">Order</Link></td>
                                         </tr>
                                         <tr>
-                                            <td><Link to="" className="">Change Password</Link></td>
+                                            <td><Link to="/recieve" className="">Order recieved</Link></td>
+                                        </tr>
+                                        <tr>
+                                            <td><Link to="/cancel" className="">Order canceled</Link></td>
+                                        </tr>
+                                        <tr>
+                                            <td><Link to="/changePassword" className="">Change password</Link></td>
                                         </tr>
                                     </tbody>
                                 </table>

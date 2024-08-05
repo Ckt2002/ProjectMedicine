@@ -17,4 +17,6 @@ public interface SupplierService {
     public Supplier updateSupplier(Supplier supplier);
 
     public void deleteSupplier(String id);
+
+    List<Supplier> getActiveSuppliers();
 }

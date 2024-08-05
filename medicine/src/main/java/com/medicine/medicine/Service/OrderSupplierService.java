@@ -22,4 +22,6 @@ public interface OrderSupplierService {
 
     
     public void deleteOrderSupplier(String id);
+
+    public void updateOrderSupplierStatus(String id, String status);
 }

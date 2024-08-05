@@ -3,6 +3,7 @@ package com.medicine.medicine.Controller;
 import com.medicine.medicine.Entity.DosageForm;
 import com.medicine.medicine.Service.DosageFormService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -51,14 +52,15 @@ public class DosageFormController {
         }
     }
 
-    @PutMapping("/{id}")
-    public ResponseEntity<String> updateDosageForm(@PathVariable Long id, @RequestBody DosageForm DosageForm) {
+    @PutMapping
+    public ResponseEntity<String> updateDosageForm(@RequestBody DosageForm DosageForm) {
         try {
-            DosageForm.setId(id);
             DosageForm updatedDosageForm = dosageFormService.updateDosageForm(DosageForm);
-            return new ResponseEntity<>("DosageForm updated successfully", HttpStatus.OK);
+            return new ResponseEntity<>("Dosage form updated successfully", HttpStatus.OK);
         } catch (IllegalArgumentException e) {
             return new ResponseEntity<>(e.getMessage(), HttpStatus.BAD_REQUEST);
+        } catch (DataIntegrityViolationException e) {
+            return new ResponseEntity<>("Dosage form is currently being used and cannot be deleted.", HttpStatus.CONFLICT);
         }
     }
 

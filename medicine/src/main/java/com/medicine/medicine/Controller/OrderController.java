@@ -66,4 +66,22 @@ public class OrderController {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
         }
     }
+
+    @GetMapping("/account/{accountId}/status/{status}")
+    public ResponseEntity<List<Order>> getOrdersByStatusAndAccountId(@PathVariable String accountId, @PathVariable String status) {
+        List<Order> orders = orderService.getOrdersByStatusAndAccountId(status, accountId);
+        if (orders.isEmpty()) {
+            return ResponseEntity.ok(null);
+        }
+        return ResponseEntity.ok(orders);
+    }
+
+    @GetMapping("/account/{accountId}")
+    public ResponseEntity<List<Order>> getOrdersByAccountId(@PathVariable String accountId) {
+        List<Order> orders = orderService.getOrdersByAccountId(accountId);
+        if (orders.isEmpty()) {
+            return ResponseEntity.noContent().build();
+        }
+        return ResponseEntity.ok(orders);
+    }
 }

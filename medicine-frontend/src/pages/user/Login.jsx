@@ -1,33 +1,48 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import Head from '../../components/user/Head';
-import { ToastContainer, toast } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
+import Notification from './Notification';
 import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 
 const Login = () => {
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
+    const [notification, setNotification] = useState({ message: '', type: '' });
     const navigate = useNavigate();
 
     const handleLogin = async (e) => {
         e.preventDefault();
         try {
             const response = await axios.post(`http://localhost:8080/api/account/login/${username}/${password}`);
-            const { accountId } = response.data;
+            const { accountId, token } = response.data;
             localStorage.setItem('accountId', accountId);
-            console.log('Response:', response.data);
-            console.log('Account ID:', accountId);
-            toast.success('Login successful!');
-            navigate('/home'); // Chuyển hướng đến trang dashboard hoặc trang chính sau khi đăng nhập thành công
+            localStorage.setItem('token', token);
+            localStorage.setItem('accountRole', 'user');
+            setNotification({ message: 'Login successful!', type: 'success' });
+            navigate('/home');
         } catch (error) {
-            toast.error('Invalid username or password');
+            let errorMessage = 'Invalid username or password';
+            if (error.response && error.response.data && error.response.data.error) {
+                errorMessage = error.response.data.error;
+            }
+            setNotification({ message: errorMessage, type: 'error' });
         }
     };
+
+    useEffect(() => {
+        if (notification.message) {
+            const timer = setTimeout(() => {
+                setNotification({ message: '', type: '' });
+            }, 3000);
+
+            return () => clearTimeout(timer);
+        }
+    }, [notification]);
 
     return (
         <div>
             <Head />
+            <Notification message={notification.message} type={notification.type} />
             <div className="breadcrumb-section breadcrumb-bg">
                 <div className="container">
                     <div className="row">

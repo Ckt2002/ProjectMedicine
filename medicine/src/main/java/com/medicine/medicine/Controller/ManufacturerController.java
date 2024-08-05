@@ -3,6 +3,7 @@ package com.medicine.medicine.Controller;
 import com.medicine.medicine.Entity.Manufacturer;
 import com.medicine.medicine.Service.ManufacturerService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -51,10 +52,9 @@ public class ManufacturerController {
         }
     }
 
-    @PutMapping("/{id}")
-    public ResponseEntity<String> updateManufacturer(@PathVariable Long id, @RequestBody Manufacturer manufacturer) {
+    @PutMapping
+    public ResponseEntity<String> updateManufacturer(@RequestBody Manufacturer manufacturer) {
         try {
-            manufacturer.setId(id);
             Manufacturer updatedManufacturer = manufacturerService.updateManufacturer(manufacturer);
             return new ResponseEntity<>("Manufacturer updated successfully", HttpStatus.OK);
         } catch (IllegalArgumentException e) {
@@ -69,6 +69,8 @@ public class ManufacturerController {
             return new ResponseEntity<>("Manufacturer deleted successfully", HttpStatus.OK);
         } catch (IllegalArgumentException e) {
             return new ResponseEntity<>(e.getMessage(), HttpStatus.BAD_REQUEST);
+        } catch (DataIntegrityViolationException e) {
+            return new ResponseEntity<>("Brand is currently being used and cannot be deleted.", HttpStatus.CONFLICT);
         }
     }
 }

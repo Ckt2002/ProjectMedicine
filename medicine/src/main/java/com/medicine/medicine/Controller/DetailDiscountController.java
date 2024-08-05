@@ -35,7 +35,13 @@ public class DetailDiscountController {
         }
     }
 
-    @PostMapping
+    @GetMapping("/medicine/{medicineId}")
+    public ResponseEntity<List<DetailDiscount>> getDetailDiscountsByMedicineId(@PathVariable String medicineId) {
+        List<DetailDiscount> detailDiscounts = detailDiscountService.getDetailDiscountsByMedicineId(medicineId);
+        return ResponseEntity.ok(detailDiscounts);
+    }
+
+    @PostMapping("/add")
     public ResponseEntity<String> addDetailDiscount(@RequestBody DetailDiscount detailDiscount) {
         try {
             detailDiscountService.addDetailDiscount(detailDiscount);

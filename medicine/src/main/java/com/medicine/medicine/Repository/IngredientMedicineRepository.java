@@ -14,4 +14,9 @@ public interface IngredientMedicineRepository extends JpaRepository<IngredientMe
 
     @Query("SELECT id FROM IngredientMedicine id WHERE id.id.idIngredient = :idIngredient")
     List<IngredientMedicine> findByIdIngredient(@Param("idIngredient") Long idIngredient);
+
+    @Query("SELECT im FROM IngredientMedicine im JOIN im.ingredient i WHERE i.name = :ingredientName")
+    List<IngredientMedicine> findByIngredientName(@Param("ingredientName") String ingredientName);
+
+    boolean existsById(IngredientMedicinePK id);
 }

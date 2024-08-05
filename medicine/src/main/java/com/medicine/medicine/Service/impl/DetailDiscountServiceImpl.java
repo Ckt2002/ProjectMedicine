@@ -53,4 +53,9 @@ public class DetailDiscountServiceImpl implements DetailDiscountService {
             throw new RuntimeException("Failed to delete detail discount: " + e.getMessage());
         }
     }
+
+    @Override
+    public List<DetailDiscount> getDetailDiscountsByMedicineId(String medicineId) {
+        return detailDiscountRepository.findByMedicineId(medicineId);
+    }
 }

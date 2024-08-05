@@ -48,6 +48,14 @@ public class OrderSupplierServiceImpl implements OrderSupplierService {
         orderSupplierRepository.deleteById(id);
     }
 
+    @Override
+    public void updateOrderSupplierStatus(String id, String status) {
+        OrderSupplier orderSupplier = orderSupplierRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Order not found"));
+        orderSupplier.setStatus(status);
+        orderSupplierRepository.save(orderSupplier);
+    }
+
     private void validateOrderSupplierExists(String orderSupplierId) {
         if (!orderSupplierRepository.existsById(orderSupplierId)) {
             throw new IllegalArgumentException("OrderSupplier not found");

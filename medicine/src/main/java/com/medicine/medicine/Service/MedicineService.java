@@ -24,5 +24,7 @@ public interface MedicineService {
     Medicine updateMedicine(Medicine medicine);
 
     void deleteMedicine(String id);
+
+    List<Medicine> getMedicinesByStatus(String status);
 }
 

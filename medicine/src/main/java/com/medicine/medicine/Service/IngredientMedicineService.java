@@ -19,4 +19,6 @@ public interface IngredientMedicineService {
     List<IngredientMedicine> findByIdMedicine(String idMedicine);
 
     List<IngredientMedicine> findByIdIngredient(Long idIngredient);
+
+    List<IngredientMedicine> searchMedicinesByIngredientName(String ingredientName);
 }

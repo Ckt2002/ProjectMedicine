@@ -18,7 +18,7 @@ public interface DetailOrderService {
 
     List<DetailOrder> getDetailOrdersByIdOrder(String idOrder);
 
-    long countDetailOrdersByMedicineId(String medicineId);
+    long countDetailOrdersByMedicineId(String orderId, String medicineId);
 
     DetailOrder deleteOneDetailOrder(String orderId, String medicineId);
 

@@ -17,4 +17,6 @@ public interface AccountService {
     public Account login(String username, String password);
 
     public Account loginAdmin(String username, String password);
+
+    Account getAccountByEmail(String email);
 }

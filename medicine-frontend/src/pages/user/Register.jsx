@@ -1,9 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { Link } from 'react-router-dom';
-import { ToastContainer, toast } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
 import Head from '../../components/user/Head';
+import Notification from './Notification';
 
 function Register() {
     const [formData, setFormData] = useState({
@@ -16,8 +15,12 @@ function Register() {
         address: '',
         phone_number: '',
         role: 'user', // default role
-        status: 'active' // default status
+        status: 'inactive' // default status
     });
+    const [notification, setNotification] = useState({ message: '', type: '' });
+    const [verificationCode, setVerificationCode] = useState('');
+    const [isVerificationModalOpen, setIsVerificationModalOpen] = useState(false);
+    const [email, setEmail] = useState('');
 
     const handleChange = (e) => {
         const { name, value } = e.target;
@@ -33,29 +36,67 @@ function Register() {
         // Kiểm tra xem tất cả các trường đã được nhập hay chưa
         for (let key in formData) {
             if (!formData[key]) {
-                toast.error(`Please enter ${key.replace('_', ' ')}`);
+                setNotification({ message: `Please enter ${key.replace('_', ' ')}`, type: 'error' });
                 return;
             }
         }
 
         try {
-            const response = await axios.post('http://localhost:8080/api/account', formData);
-            if (response.status === 201) {
-                toast.success('Registration successful!');
+            // Send confirmation email
+            const emailResponse = await axios.get(`http://localhost:8080/api/account/send-email/${formData.email}`);
+            if (emailResponse.status === 200) {
+                // const response = await axios.post('http://localhost:8080/api/account', formData);
+                setEmail(formData.email);
+                setIsVerificationModalOpen(true);
+                setNotification({ message: 'Verification email sent. Please check your email.', type: 'success' });
             }
         } catch (err) {
             if (err.response && err.response.data) {
-                toast.error(err.response.data);
+                setNotification({ message: err.response.data, type: 'error' });
             } else {
-                toast.error('Registration failed!');
+                setNotification({ message: 'Registration failed!', type: 'error' });
             }
         }
     };
 
+    const handleVerification = async () => {
+        try {
+            // console.log("verificationCode: ", verificationCode);
+            const response = await axios.get(`http://localhost:8080/api/account/confirm-email/${email}/${verificationCode}`);
+            if (response.status === 200) {
+                // Update the user's status to 'active'
+                const accountResponse = await axios.post('http://localhost:8080/api/account/add', {
+                    ...formData,
+                    status: 'active'
+                });
+                if (accountResponse.status === 201) {
+                    setNotification({ message: 'Registration successful! You can now log in.', type: 'success' });
+                }
+                setIsVerificationModalOpen(false);
+            }
+        } catch (err) {
+            if (err.response && err.response.data) {
+                setNotification({ message: err.response.data, type: 'error' });
+            } else {
+                setNotification({ message: 'Invalid verification code!', type: 'error' });
+            }
+        }
+    };
+
+    useEffect(() => {
+        if (notification.message) {
+            const timer = setTimeout(() => {
+                setNotification({ message: '', type: '' });
+            }, 3000);
+
+            return () => clearTimeout(timer);
+        }
+    }, [notification]);
+
     return (
         <div>
             <Head />
-            <ToastContainer />
+            <Notification message={notification.message} type={notification.type} />
             <div className="breadcrumb-section breadcrumb-bg">
                 <div className="container">
                     <div className="row">
@@ -114,7 +155,59 @@ function Register() {
                     </div>
                 </div>
             </div>
-        </div>
+
+            {/* Verification Modal */}
+            {isVerificationModalOpen && (
+                <div style={{
+                    position: 'fixed',
+                    top: 0,
+                    left: 0,
+                    width: '100%',
+                    height: '100%',
+                    background: 'rgba(0, 0, 0, 0.6)',
+                    display: 'flex',
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    zIndex: 1000
+                }}>
+                    <div style={{
+                        background: 'white',
+                        padding: '20px',
+                        borderRadius: '8px',
+                        textAlign: 'center'
+                    }}>
+                        <h2>Email Verification</h2>
+                        <p>Please enter the verification code sent to your email.</p>
+                        <input
+                            type="text"
+                            placeholder="Verification Code"
+                            value={verificationCode}
+                            onChange={(e) => setVerificationCode(e.target.value)}
+                            style={{
+                                marginRight: '20px' // Thêm khoảng cách bên phải của input
+                            }}
+                        />
+                        <button onClick={handleVerification} style={{
+                            backgroundColor: '#F28123',
+                            color: 'white',
+                            borderRadius: '50px',
+                            padding: '5px 20px',
+                            border: 'none',
+                            cursor: 'pointer',
+                            transition: 'background-color 0.3s, color 0.3s'
+                        }}
+                            onMouseEnter={(e) => {
+                                e.target.style.backgroundColor = 'white';
+                                e.target.style.color = 'black';
+                            }}
+                            onMouseLeave={(e) => {
+                                e.target.style.backgroundColor = '#F28123';
+                                e.target.style.color = 'white';
+                            }}>Verify</button>
+                    </div>
+                </div>
+            )}
+        </div >
     );
 }
 

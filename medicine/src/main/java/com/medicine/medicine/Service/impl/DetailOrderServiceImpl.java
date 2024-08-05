@@ -66,8 +66,8 @@ public class DetailOrderServiceImpl implements DetailOrderService {
     }
 
     @Override
-    public long countDetailOrdersByMedicineId(String medicineId) {
-        return detailOrderRepository.countBySeriMedicineId(medicineId);
+    public long countDetailOrdersByMedicineId(String orderId, String medicineId) {
+        return detailOrderRepository.countBySeriMedicineId(orderId, medicineId);
     }
 
     @Override

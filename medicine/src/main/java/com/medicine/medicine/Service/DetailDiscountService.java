@@ -21,4 +21,6 @@ public interface DetailDiscountService {
 
     
     public void deleteDetailDiscount(DetailDiscountPK id);
+
+    public List<DetailDiscount> getDetailDiscountsByMedicineId(String medicineId);
 }

@@ -1,21 +1,53 @@
-import React, { useEffect, useState, useCallback } from 'react'
+import React, { useEffect, useState } from 'react';
 import axios from 'axios';
-import { Link, useNavigate, useLocation } from 'react-router-dom';
-import Head from '../../components/user/Head'
-import Footer from '../../components/user/Footer'
-import { ToastContainer, toast } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
+import { useNavigate, useLocation } from 'react-router-dom';
+import Notification from './Notification';
+import Head from '../../components/user/Head';
+import Footer from '../../components/user/Footer';
 
 function ProductDetail() {
     const [ingredientMedicine, setIngredientMedicines] = useState([]);
     const [countNumber, setCountNumber] = useState(0);
     const [selectedQuantity, setSelectedQuantity] = useState(0);
+    const [discount, setDiscount] = useState(null);
     const location = useLocation();
     const { product } = location.state || {}; // Lấy sản phẩm từ state
     const [isLoggedIn, setIsLoggedIn] = useState(false);
+    const [notification, setNotification] = useState({ message: '', type: '' });
+    const [effectNames, setEffectNames] = useState([]);
+    const [contraindicatedNames, setContraindicatedNames] = useState([]);
     const navigate = useNavigate();
 
     let order = null;
+
+    useEffect(() => {
+        if (notification.message) {
+            const timer = setTimeout(() => {
+                setNotification({ message: '', type: '' });
+            }, 3000);
+
+            return () => clearTimeout(timer);
+        }
+    }, [notification]);
+
+    useEffect(() => {
+        const fetchEffectAndContraindicatedData = async () => {
+            const effectNames = await getEffectMedicines(product.id);
+            setEffectNames(effectNames);
+
+            const contraindicatedNames = await getContraindicatedMedicines(product.id);
+            setContraindicatedNames(contraindicatedNames);
+        };
+
+        getDetailMedicine();
+        getCountNumber();
+        fetchDetailDiscount();
+        fetchEffectAndContraindicatedData();
+
+        // Kiểm tra xem người dùng đã đăng nhập chưa
+        const token = localStorage.getItem('accountId');
+        setIsLoggedIn(!!token);
+    }, [product]);
 
     const getDetailMedicine = async () => {
         await axios.get(`http://localhost:8080/api/ingredient_medicine/medicine/${product.id}`)
@@ -23,7 +55,7 @@ function ProductDetail() {
                 setIngredientMedicines(response.data);
             })
             .catch(error => {
-                toast.error('There was an error fetching the data!', error);
+                setNotification({ message: 'There was an error fetching the data!', type: 'error' });
             });
     };
 
@@ -32,27 +64,53 @@ function ProductDetail() {
             const response = await axios.get(`http://localhost:8080/api/seri/count/${product.id}/new`);
             setCountNumber(response.data);
         } catch (error) {
-            toast.error('There was an error fetching the data!', error);
+            setNotification({ message: 'There was an error fetching the data!', type: 'error' });
         }
     };
 
-    useEffect(() => {
+    const getEffectMedicines = async (medicineId) => {
+        try {
+            const response = await axios.get(`http://localhost:8080/api/effect-medicine/medicine/${medicineId}`);
+            return response.data.map(item => item.effect.name);
+        } catch (error) {
+            setNotification({ message: 'There was an error fetching the effect data!', type: 'error' });
+            return [];
+        }
+    };
 
-        getDetailMedicine();
+    const getContraindicatedMedicines = async (medicineId) => {
+        try {
+            const response = await axios.get(`http://localhost:8080/api/contraindicated_medicine/${medicineId}`);
+            return response.data.map(item => item.contraindicated.name);
+        } catch (error) {
+            setNotification({ message: 'There was an error fetching the contraindicated data!', type: 'error' });
+            return [];
+        }
+    };
 
-        getCountNumber();
-
-        // Kiểm tra xem người dùng đã đăng nhập chưa
-        const token = localStorage.getItem('accountId');
-        setIsLoggedIn(!!token);
-    }, [product]);
+    const fetchDetailDiscount = async () => {
+        try {
+            const response = await axios.get(`http://localhost:8080/api/detail-discount/medicine/${product.id}`);
+            const currentDiscount = response.data.find(discount => {
+                const now = new Date();
+                return new Date(discount.fromDate) <= now && new Date(discount.toDate) >= now;
+            });
+            setDiscount(currentDiscount);
+        } catch (error) {
+            setNotification({ message: 'There was an error fetching the discount data!', type: 'error' });
+        }
+    };
 
     const fetchRandomSeri = async (medicineId) => {
         try {
-            const response = await axios.get(`http://localhost:8080/api/seri/random-seri/${medicineId}`);
+            const response = await axios.get(`http://localhost:8080/api/seri/random-seri/${medicineId}`, {
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`
+                }
+            });
             return response.data;
         } catch (error) {
-            toast.error('There was an error fetching the random seri!', error);
+            setNotification({ message: 'There was an error fetching the random seri!', type: 'error' });
             return null;
         }
     };
@@ -62,13 +120,19 @@ function ProductDetail() {
             // Nếu người dùng chưa đăng nhập, chuyển hướng đến trang đăng nhập
             navigate('/login');
         } else {
-            console.log(selectedQuantity);
             if (selectedQuantity === 0) {
-                toast.error('Quantity must be greater than 0');
+                setNotification({ message: 'Quantity must be greater than 0', type: 'error' });
                 return;
             }
             try {
-                const response = await axios.get(`http://localhost:8080/api/order/status/creating`);
+                const response = await axios.get(`http://localhost:8080/api/order/account/${localStorage.getItem('accountId')}/status/creating`,
+                    {
+                        headers: {
+                            'Authorization': `Bearer ${localStorage.getItem('token')}`
+                        }
+                    });
+                setNotification({ message: 'Ok', type: 'success' });
+                console.log(response.data.length);
                 if (response.data.length === 0) {
                     const newOrder = {
                         totalPrice: 0.0,
@@ -77,23 +141,23 @@ function ProductDetail() {
                         status: 'creating',
                         accountUser: { id: localStorage.getItem('accountId') } // Lấy accountId từ localStorage
                     };
-                    const orderResponse = await axios.post('http://localhost:8080/api/order', newOrder);
-
+                    const orderResponse = await axios.post('http://localhost:8080/api/order', newOrder, {
+                        headers: {
+                            'Authorization': `Bearer ${localStorage.getItem('token')}`
+                        }
+                    });
                     order = orderResponse.data;
-                    // console.log('Order:', order);
                 } else {
-                    // Xử lý logic giỏ hàng nếu tìm thấy Order với status 'creating'
                     order = response.data[0];
-                    // console.log('Order:', order);
                 }
+
+                const discountedPrice = calculateDiscountedPrice();
+                console.log(discountedPrice);
 
                 for (let i = 0; i < selectedQuantity; i++) {
                     try {
                         const seriData = await fetchRandomSeri(product.id);
                         if (seriData) {
-                            // console.log('Seri Data:', seriData);
-
-                            // Tạo DetailOrder mới
                             const newDetailOrder = {
                                 id: {
                                     idOrder: order.id,
@@ -105,45 +169,59 @@ function ProductDetail() {
                                 seri: {
                                     id: seriData.id
                                 },
-                                price: product.price
+                                price: discountedPrice
                             };
 
-                            // Gọi API thêm DetailOrder
-                            const detailOrderResponse = await axios.post('http://localhost:8080/api/detail-order', newDetailOrder);
+                            const detailOrderResponse = await axios.post(
+                                'http://localhost:8080/api/detail-order', newDetailOrder, {
+                                headers: {
+                                    'Authorization': `Bearer ${localStorage.getItem('token')}`
+                                }
+                            });
                             if (detailOrderResponse.status === 201) {
                                 console.log('DetailOrder created successfully');
                             }
 
-                            // Cập nhật trạng thái của Seri thành "sold"
                             const updatedSeri = { ...seriData, status: 'sold' };
-                            const updateSeriResponse = await axios.put(`http://localhost:8080/api/seri/${seriData.id}`, updatedSeri);
+                            const updateSeriResponse = await axios.put(`http://localhost:8080/api/seri/${seriData.id}`, updatedSeri, {
+                                headers: {
+                                    'Authorization': `Bearer ${localStorage.getItem('token')}`
+                                }
+                            });
                             if (updateSeriResponse.status === 200) {
                                 console.log('Seri updated successfully');
                             }
                         }
                     } catch (error) {
                         console.error(error);
-                        toast.error('There was an error processing the seri!', error);
+                        setNotification({ message: 'There was an error processing the seri!', type: 'error' });
                     }
                 }
                 getDetailMedicine();
                 getCountNumber();
+                setNotification({ message: 'Added to cart successfully!', type: 'success' });
             } catch (error) {
-                toast.error('There was an error handling the order!', error);
+                setNotification({ message: 'There was an error handling the order!', type: 'error' });
             }
-
         }
     };
 
     const handleInputChange = (event) => {
         setSelectedQuantity(parseInt(event.target.value, 10));
-        console.log(event.target.value);
+    };
+
+    const calculateDiscountedPrice = () => {
+        if (discount) {
+            const discountAmount = product.price * (discount.discount.percentage / 100);
+            return product.price - discountAmount;
+        }
+        return product.price;
     };
 
     return (
         <div>
             <Head />
-            <ToastContainer />
+            <Notification message={notification.message} type={notification.type} />
             {/* Breadcrumb Section */}
             <div className="breadcrumb-section breadcrumb-bg">
                 <div className="container">
@@ -165,14 +243,32 @@ function ProductDetail() {
                     <div className="row">
                         <div className="col-md-5">
                             <div className="single-product-img">
-                                <img src={`assets/img/products/Lecifex 500mg Abbott.webp`} alt={product.name} />
+                                <img src={`/images/products/${product.image}`} alt={product.name} />
                             </div>
                         </div>
                         <div className="col-md-7">
                             <div className="single-product-content">
                                 <h3>{product.name}</h3>
-                                <p className="single-product-pricing"><span>Quantity: {countNumber}</span> ${product.price}</p>
+                                <p className="single-product-pricing">
+                                    <span>Quantity: {countNumber}</span>
+                                    {calculateDiscountedPrice()} VND
+                                    {discount && (
+                                        <span style={{ textDecoration: 'line-through', marginLeft: '10px' }}>
+                                            {product.price} VND
+                                        </span>
+                                    )}
+                                </p>
                                 <p><strong>Description: </strong>{product.description}</p>
+                                <p><strong>Effect: </strong><br />
+                                    {effectNames.map((name, index) => (
+                                        <span key={index}>{name}<br /></span>
+                                    ))}</p>
+                                {/* <p><strong>Contraindication: </strong>{contraindicatedNames.join('. ')}</p> */}
+                                <p><strong>Contraindication: </strong><br />
+                                    {contraindicatedNames.map((name, index) => (
+                                        <span key={index}>{name}<br /></span>
+                                    ))}</p>
+
                                 <div className="single-product-form">
                                     <form action="index.html">
                                         <input type="number" placeholder="0" min={0} max={countNumber}
@@ -249,8 +345,8 @@ function ProductDetail() {
             {/* End Single Product */}
 
             <Footer />
-        </div>
-    )
+        </div >
+    );
 }
 
-export default ProductDetail
+export default ProductDetail;

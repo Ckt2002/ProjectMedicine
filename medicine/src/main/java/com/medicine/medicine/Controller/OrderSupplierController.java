@@ -35,7 +35,8 @@ public class OrderSupplierController {
     public ResponseEntity<String> addOrderSupplier(@RequestBody OrderSupplier orderSupplier) {
         try {
             OrderSupplier newOrderSupplier = orderSupplierService.addOrderSupplier(orderSupplier);
-            return new ResponseEntity<>("OrderSupplier added successfully", HttpStatus.CREATED);
+            System.out.println(newOrderSupplier.getId());
+            return new ResponseEntity<>(newOrderSupplier.getId(), HttpStatus.CREATED);
         } catch (IllegalArgumentException e) {
             return new ResponseEntity<>(e.getMessage(), HttpStatus.BAD_REQUEST);
         }
@@ -50,6 +51,16 @@ public class OrderSupplierController {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+        }
+    }
+
+    @PutMapping("/{id}/{status}")
+    public ResponseEntity<String> updateOrderSupplierStatus(@PathVariable String id, @PathVariable String status) {
+        try {
+            orderSupplierService.updateOrderSupplierStatus(id, status);
+            return new ResponseEntity<>("Order status updated successfully", HttpStatus.OK);
+        } catch (IllegalArgumentException e) {
+            return new ResponseEntity<>(e.getMessage(), HttpStatus.BAD_REQUEST);
         }
     }
 

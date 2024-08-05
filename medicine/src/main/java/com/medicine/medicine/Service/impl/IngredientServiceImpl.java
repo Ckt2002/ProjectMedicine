@@ -38,12 +38,13 @@ public class IngredientServiceImpl implements IngredientService {
     }
 
     @Override
-    public Ingredient updateIngredient(Ingredient Ingredient) {
-        validateIngredientExists(Ingredient.getId());
-        if (ingredientRepository.findByName(Ingredient.getName()).isPresent()) {
-            throw new IllegalArgumentException("Ingredient name already exists");
+    public Ingredient updateIngredient(Ingredient ingredient) {
+        validateIngredientExists(ingredient.getId());
+        if (ingredientRepository.findByName(ingredient.getName()).isPresent()
+         && !ingredient.getId().equals(ingredientRepository.findByName(ingredient.getName()).get().getId())) {
+            throw new IllegalArgumentException("ingredient name already exists");
         }
-        return ingredientRepository.save(Ingredient);
+        return ingredientRepository.save(ingredient);
     }
 
     @Override

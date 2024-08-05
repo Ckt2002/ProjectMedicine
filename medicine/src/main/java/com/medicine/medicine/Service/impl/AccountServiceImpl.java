@@ -1,11 +1,15 @@
 package com.medicine.medicine.Service.impl;
 
 import com.medicine.medicine.Entity.Account;
+import com.medicine.medicine.Entity.CustomUserDetails;
 import com.medicine.medicine.Repository.AccountRepository;
 import com.medicine.medicine.Service.AccountService;
 import com.medicine.medicine.UtilityClass.RandomIdGenerator;
 import lombok.AllArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -13,10 +17,11 @@ import java.util.Optional;
 
 @Service
 @AllArgsConstructor
-public class AccountServiceImpl implements AccountService {
+public class AccountServiceImpl implements AccountService, UserDetailsService {
 
     @Autowired
     private AccountRepository accountRepository;
+
 
     @Override
     public List<Account> getAllAccounts()
@@ -68,8 +73,12 @@ public class AccountServiceImpl implements AccountService {
         Optional<Account> accountOpt = accountRepository.findByUsername(username);
         if (accountOpt.isPresent()) {
             Account account = accountOpt.get();
-            if (account.getPassword().equals(password)) {
+            if (account.getPassword().equals(password)
+                    && account.getRole().equals("user")
+                    && account.getStatus().equals("active")) {
                 return account;
+            } else if (!account.getStatus().equals("active")) {
+                throw new IllegalArgumentException("Your account is inactive");
             }
         }
         throw new IllegalArgumentException("Invalid username or password");
@@ -80,11 +89,32 @@ public class AccountServiceImpl implements AccountService {
         Optional<Account> accountOpt = accountRepository.findByUsername(username);
         if (accountOpt.isPresent()) {
             Account account = accountOpt.get();
-            if (account.getPassword().equals(password) && account.getRole().equals("admin")) {
+            if (account.getPassword().equals(password)
+                    && account.getRole().equals("admin")
+                    && account.getStatus().equals("active")) {
                 return account;
+            } else if (!account.getStatus().equals("active")) {
+                throw new IllegalArgumentException("You can't login with this account");
             }
         }
         throw new IllegalArgumentException("Invalid username or password");
     }
 
+    @Override
+    public Account getAccountByEmail(String email) {
+        Optional<Account> accountTemp = accountRepository.findByEmail(email);
+        if (accountTemp.isPresent()) {
+            return accountTemp.get();
+        }
+        throw new IllegalArgumentException("Email not found");
+    }
+
+    @Override
+    public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
+        Optional<Account> accountOpt = accountRepository.findByUsername(username);
+        if (accountOpt.isPresent()) {
+            return new CustomUserDetails(accountOpt.get());
+        }
+        throw new UsernameNotFoundException("User not found with username: " + username);
+    }
 }

@@ -51,6 +51,8 @@ public class IngredientMedicineController {
             return new ResponseEntity<>("IngredientMedicine created successfully", HttpStatus.CREATED);
         } catch (IllegalArgumentException e) {
             return new ResponseEntity<>(e.getMessage(), HttpStatus.BAD_REQUEST);
+        } catch (Exception e) {
+            return new ResponseEntity<>("Internal server error", HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
@@ -74,6 +76,18 @@ public class IngredientMedicineController {
             return new ResponseEntity<>("IngredientMedicine deleted successfully", HttpStatus.OK);
         } catch (IllegalArgumentException e) {
             return new ResponseEntity<>(e.getMessage(), HttpStatus.BAD_REQUEST);
+        }
+    }
+
+    @GetMapping("/searchByIngredient/{ingredient}")
+    public ResponseEntity<List<IngredientMedicine>> searchByIngredient(@PathVariable String ingredient) {
+        try {
+            List<IngredientMedicine> medicines = ingredientMedicineService.searchMedicinesByIngredientName(ingredient);
+            return new ResponseEntity<>(medicines, HttpStatus.OK);
+        } catch (RuntimeException e) {
+            return new ResponseEntity<>(null, HttpStatus.NOT_FOUND);
+        } catch (Exception e) {
+            return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 }

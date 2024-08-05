@@ -1,36 +1,23 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+// import axios from 'axios';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 
 function Head() {
     const [isLoggedIn, setIsLoggedIn] = useState(false);
-    const navigate = useNavigate();
+    // const navigate = useNavigate();
 
     useEffect(() => {
         // lưu token đăng nhập trong local storage
         const token = localStorage.getItem('accountId');
-        if (token) {
+        const role = localStorage.getItem('accountRole') === 'user';
+        if (token && role) {
             setIsLoggedIn(true);
         } else {
             setIsLoggedIn(false);
         }
     }, []);
-
-    const handleLogout = async () => {
-        try {
-            const response = await axios.post('http://localhost:8080/api/account/logout', {}, { withCredentials: true });
-            if (response.status === 200) {
-                localStorage.removeItem('accountId');
-                setIsLoggedIn(false);
-                // toast.success('Logged out successfully');
-                window.location.reload();
-            }
-        } catch (error) {
-            toast.error('Error during logout', error);
-        }
-    };
 
     return (
         <div>
@@ -65,6 +52,9 @@ function Head() {
                                             <Link to="/product">Shop</Link>
                                         </li>
                                         <li>
+                                            <Link to="/medicineType">Medicine types</Link>
+                                        </li>
+                                        <li>
                                             <div className="header-icons">
                                                 <Link className="shopping-cart" to="/cart">
                                                     <i className="fas fa-shopping-cart"></i>
@@ -73,9 +63,6 @@ function Head() {
                                                     <Link className="mobile-hide search-bar-icon" to="/account">
                                                         <i className="fas fa-user"></i> Account
                                                     </Link>
-                                                    // <button onClick={handleLogout} className="mobile-hide search-bar-icon btn btn-link">
-                                                    //     <i className="fas fa-sign-out-alt"></i> Đăng xuất
-                                                    // </button>
                                                 ) : (
                                                     <Link className="mobile-hide search-bar-icon" to="/login">
                                                         <i className="fas fa-user"></i> Login

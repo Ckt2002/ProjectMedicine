@@ -1,36 +1,78 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
-import { Link, useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import Head from '../../components/user/Head';
 import Footer from '../../components/user/Footer';
-import { ToastContainer, toast } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
+import Notification from './Notification';
+import moment from 'moment';
 
 function Product() {
+    const location = useLocation();
     const [products, setProducts] = useState([]);
+    const [detailDiscounts, setDetailDiscounts] = useState([]);
     const [currentPage, setCurrentPage] = useState(1);
-    const [itemsPerPage] = useState(6); // Set the number of items per page
-    const [sortType, setSortType] = useState('name'); // State for sorting
+    const [itemsPerPage] = useState(6);
+    const [sortType, setSortType] = useState('name');
     const [isLoggedIn, setIsLoggedIn] = useState(false);
+    const [notification, setNotification] = useState({ message: '', type: '' });
+    const [medicineTypes, setMedicineTypes] = useState([]);
+    const [selectedMedicineType, setSelectedMedicineType] = useState('All');
+    const [searchType, setSearchType] = useState('name');
+    const [searchTerm, setSearchTerm] = useState('');
     const navigate = useNavigate();
 
     useEffect(() => {
-        // Fetch data from Spring Boot API
-        axios.get('http://localhost:8080/api/medicine')
+        axios.get('http://localhost:8080/api/medicine/status/selling')
             .then(response => {
                 setProducts(response.data);
             })
             .catch(error => {
-                toast.error('There was an error fetching the data!', error);
+                setNotification({ message: 'There was an error fetching the data!', type: 'error' });
             });
-        // Kiểm tra xem người dùng đã đăng nhập chưa
+
+        axios.get('http://localhost:8080/api/detail-discount')
+            .then(response => {
+                setDetailDiscounts(response.data);
+            })
+            .catch(error => {
+                setNotification({ message: 'There was an error fetching the detail discounts!', type: 'error' });
+            });
+
+        axios.get('http://localhost:8080/api/medicine_type')
+            .then(response => {
+                setMedicineTypes(response.data);
+            })
+            .catch(error => {
+                setNotification({ message: 'There was an error fetching the medicine types!', type: 'error' });
+            });
+
         const token = localStorage.getItem('accountId');
         setIsLoggedIn(!!token);
-    }, []);
 
-    // Function to sort products based on sort type
-    const sortProducts = (products) => {
-        return [...products].sort((a, b) => {
+        if (location.state && location.state.selectedMedicineType) {
+            setSelectedMedicineType(location.state.selectedMedicineType);
+        }
+    }, [location.state]);
+
+    useEffect(() => {
+        if (notification.message) {
+            const timer = setTimeout(() => {
+                setNotification({ message: '', type: '' });
+            }, 3000);
+
+            return () => clearTimeout(timer);
+        }
+    }, [notification]);
+
+    const sortAndFilterProducts = (products) => {
+        let filteredProducts = products;
+
+        if (selectedMedicineType !== 'All') {
+            const selectedTypeId = parseInt(selectedMedicineType, 10);
+            filteredProducts = products.filter(product => product.medicineType && product.medicineType.id === selectedTypeId);
+        }
+
+        return filteredProducts.sort((a, b) => {
             if (sortType === 'name') {
                 return a.name.localeCompare(b.name);
             } else if (sortType === 'price') {
@@ -40,12 +82,10 @@ function Product() {
         });
     };
 
-    // Calculate the current products to display
     const indexOfLastProduct = currentPage * itemsPerPage;
     const indexOfFirstProduct = indexOfLastProduct - itemsPerPage;
-    const currentProducts = sortProducts(products).slice(indexOfFirstProduct, indexOfLastProduct);
+    const currentProducts = sortAndFilterProducts(products).slice(indexOfFirstProduct, indexOfLastProduct);
 
-    // Change page
     const paginate = (pageNumber) => setCurrentPage(pageNumber);
 
     const pageNumbers = [];
@@ -53,28 +93,66 @@ function Product() {
         pageNumbers.push(i);
     }
 
-    const handleAddToCart = (product) => {
-        if (!isLoggedIn) {
-            // Nếu người dùng chưa đăng nhập, chuyển hướng đến trang đăng nhập
-            navigate('/login');
-        } else {
-            // Thêm sản phẩm vào giỏ hàng (có thể là gọi API để thêm vào giỏ hàng của người dùng)
-            console.log('Thêm sản phẩm vào giỏ hàng:', product);
-            // Ví dụ: axios.post('http://localhost:8080/api/cart', { productId: product.id, userId: localStorage.getItem('accountId') })
-            // .then(response => console.log(response.data))
-            // .catch(error => console.error(error));
+    const handleProductDetail = (product) => {
+        navigate('/productDetail', { state: { product } });
+    };
+
+    const handleMedicineTypeChange = (e) => {
+        setSelectedMedicineType(e.target.value);
+        setCurrentPage(1);
+    };
+
+    const handleSearchTypeChange = (e) => {
+        setSearchType(e.target.value);
+        setSearchTerm('');  // Reset search term when search type changes
+    };
+
+    const handleSearchTermChange = (e) => {
+        setSearchTerm(e.target.value);
+    };
+
+    const handleSearch = () => {
+        if (searchType === 'name') {
+            setProducts(prevProducts =>
+                prevProducts.filter(product =>
+                    product.name.toLowerCase().includes(searchTerm.toLowerCase())
+                )
+            );
+        } else if (searchType === 'ingredient') {
+            axios.get(`http://localhost:8080/api/ingredient_medicine/searchByIngredient/${searchTerm}`)
+                .then(response => {
+                    const ingredientMedicines = response.data;
+                    const medicines = ingredientMedicines.map(im => im.medicine);
+                    setProducts(medicines);
+                })
+                .catch(error => {
+                    setNotification({ message: 'There was an error fetching the data!', type: 'error' });
+                });
         }
     };
 
-    const handleProductDetail = (product) => {
-        navigate('/productDetail', { state: { product } });
+    const getDiscountedPrice = (product) => {
+        const discountDetail = detailDiscounts.find(detail => detail.medicine.id === product.id);
+        if (discountDetail) {
+            const today = moment().startOf('day');
+            console.log(today);
+            const startDate = moment(discountDetail.fromDate).startOf('day');
+            console.log('startDate: ', discountDetail.startDate);
+            const endDate = moment(discountDetail.toDate).endOf('day');
+            console.log('endDate: ', endDate);
+
+            if (today.isBetween(startDate, endDate, null, '[]')) {
+                const discountPercentage = discountDetail.discount.percentage; // Assuming discount has a percentage field
+                return product.price * (1 - discountPercentage / 100);
+            }
+        }
+        return null;
     };
 
     return (
         <div>
             <Head />
-            <ToastContainer />
-            {/* breadcrumb-section */}
+            <Notification message={notification.message} type={notification.type} />
             <div className="breadcrumb-section breadcrumb-bg">
                 <div className="container">
                     <div className="row">
@@ -86,11 +164,14 @@ function Product() {
                     </div>
                 </div>
             </div>
-            {/* end breadcrumb section */}
 
             <div className="search-bar-tablecell">
-                <h3>Search:
-                    <input type="text" placeholder="" />
+                <h3>Search
+                    <select value={searchType} onChange={handleSearchTypeChange} style={{ marginLeft: '10px', marginRight: '10px' }}>
+                        <option value="name">Name</option>
+                        <option value="ingredient">Ingredient</option>
+                    </select> :
+                    <input type="text" placeholder="" onChange={handleSearchTermChange} />
                     <button type="submit"
                         style={{ color: 'white' }}
                         onMouseEnter={(e) => {
@@ -100,13 +181,12 @@ function Product() {
                         onMouseLeave={(e) => {
                             e.target.style.backgroundColor = '#F28123';
                             e.target.style.color = 'white';
-                        }}>
+                        }}
+                        onClick={handleSearch}>
                         Search<i className="fas fa-search"></i></button>
                 </h3>
             </div>
 
-            {/* Sort Dropdown */}
-            {/* Sort Dropdown */}
             <div className="centered-select" style={{
                 display: 'flex',
                 justifyContent: 'center',
@@ -115,35 +195,67 @@ function Product() {
                 <select className="styled-select" value={sortType} onChange={(e) => setSortType(e.target.value)} style={{
                     border: '2px solid #F28123',
                     borderRadius: '50px',
-                    padding: '10px',
+                    padding: '5px',
                     outline: 'none',
                     color: 'white',
-                    fontSize: '25px',
+                    fontSize: '20px',
                     textAlign: 'center',
-                    background: '#F28123'
+                    background: '#F28123',
+                    margin: '10px'
                 }}>
                     <option value="name" style={{ color: 'orange', background: 'white' }}>Sort by Name</option>
                     <option value="price" style={{ color: 'orange', background: 'white' }}>Sort by Price</option>
                 </select>
+
+                <select className="" value={selectedMedicineType} onChange={handleMedicineTypeChange} style={{
+                    border: '2px solid #F28123',
+                    borderRadius: '50px',
+                    padding: '5px',
+                    outline: 'none',
+                    color: 'white',
+                    fontSize: '20px',
+                    textAlign: 'center',
+                    background: '#F28123',
+                    margin: '10px'
+                }}>
+                    <option value="All" style={{ color: 'orange', background: 'white' }}>All types</option>
+                    {medicineTypes.map(type => (
+                        <option key={type.id} value={type.id} style={{ color: 'orange', background: 'white' }}>{type.name}</option>
+                    ))}
+                </select>
             </div>
 
-
-            {/* products */}
             <div className="product-section mt-80 mb-80">
                 <div className="container">
                     <div className="row product-lists">
                         {currentProducts.map((product) => {
-                            console.log(product); // Kiểm tra dữ liệu product
+                            const discountedPrice = getDiscountedPrice(product);
                             return (
-                                <div key={product.id} className="col-lg-4 col-md-6 text-center">
-                                    <div className="single-product-item">
+                                <div key={product.id} className="col-lg-4 col-md-6 text-center" style={{ marginBottom: '40px' }}>
+                                    <div className="single-product-item" style={{
+                                        display: 'flex',
+                                        flexDirection: 'column',
+                                        height: '100%',
+                                        alignItems: 'center',
+                                        textAlign: 'center'
+                                    }}>
                                         <div className="product-image">
                                             <button onClick={() => handleProductDetail(product)} style={{ border: 'none', background: 'none' }}>
-                                                <img src={`assets/img/products/Lecifex 500mg Abbott.webp`} alt={product.name} />
+                                                <img src={`/images/products/${product.image}`}
+                                                    alt={product.name} style={{ height: '250px', width: 'auto' }} />
                                             </button>
                                         </div>
-                                        <h3>{product.name}</h3>
-                                        <p className="product-price">{product.price}$ </p>
+                                        <h3><>{product.name}</></h3>
+                                        <p className="product-price" style={{ marginTop: 'auto' }}>
+                                            {discountedPrice !== null ? (
+                                                <>
+                                                    <span className="original-price"><s>{product.price} VND</s></span>
+                                                    {discountedPrice} VND
+                                                </>
+                                            ) : (
+                                                `${product.price} VND`
+                                            )}
+                                        </p>
                                         <button onClick={() => handleProductDetail(product)} style={{
                                             backgroundColor: '#F28123',
                                             color: 'white',
@@ -168,7 +280,6 @@ function Product() {
                             );
                         })}
                     </div>
-
                     <div className="row">
                         <div className="col-lg-12 text-center">
                             <div className="pagination-wrap">
@@ -186,10 +297,9 @@ function Product() {
                     </div>
                 </div>
             </div>
-            {/* end products */}
 
             <Footer />
-        </div >
+        </div>
     );
 }
 

@@ -3,6 +3,7 @@ package com.medicine.medicine.Controller;
 import com.medicine.medicine.Entity.Ingredient;
 import com.medicine.medicine.Service.IngredientService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -51,10 +52,9 @@ public class IngredientController {
         }
     }
 
-    @PutMapping("/{id}")
-    public ResponseEntity<String> updateIngredient(@PathVariable Long id, @RequestBody Ingredient Ingredient) {
+    @PutMapping
+    public ResponseEntity<String> updateIngredient(@RequestBody Ingredient Ingredient) {
         try {
-            Ingredient.setId(id);
             Ingredient updatedIngredient = ingredientService.updateIngredient(Ingredient);
             return new ResponseEntity<>("Ingredient updated successfully", HttpStatus.OK);
         } catch (IllegalArgumentException e) {
@@ -69,6 +69,8 @@ public class IngredientController {
             return new ResponseEntity<>("Ingredient deleted successfully", HttpStatus.OK);
         } catch (IllegalArgumentException e) {
             return new ResponseEntity<>(e.getMessage(), HttpStatus.BAD_REQUEST);
+        } catch (DataIntegrityViolationException e) {
+            return new ResponseEntity<>("Ingredient is currently being used and cannot be deleted.", HttpStatus.CONFLICT);
         }
     }
 }

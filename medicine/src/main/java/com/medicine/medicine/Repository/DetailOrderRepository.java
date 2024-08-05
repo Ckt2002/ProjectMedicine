@@ -14,8 +14,8 @@ public interface DetailOrderRepository extends JpaRepository<DetailOrder, Detail
     @Query("SELECT d FROM DetailOrder d WHERE d.id.idOrder = :idOrder")
     List<DetailOrder> findByIdOrder(@Param("idOrder") String idOrder);
 
-    @Query("SELECT COUNT(d) FROM DetailOrder d WHERE d.seri.medicine.id = :medicineId")
-    long countBySeriMedicineId(@Param("medicineId") String medicineId);
+    @Query("SELECT COUNT(d) FROM DetailOrder d WHERE d.id.idOrder = :idOrder AND d.seri.medicine.id = :medicineId")
+    long countBySeriMedicineId(@Param("idOrder") String orderId, @Param("medicineId") String medicineId);
 
     @Query("SELECT d FROM DetailOrder d WHERE d.order.id = :orderId AND d.seri.medicine.id = :medicineId")
     List<DetailOrder> findByOrderIdAndMedicineId(@Param("orderId") String orderId, @Param("medicineId") String medicineId);
