@@ -109,25 +109,43 @@ function Product() {
 
     const handleSearchTermChange = (e) => {
         setSearchTerm(e.target.value);
+        axios.get('http://localhost:8080/api/medicine/status/selling')
+            .then(response => {
+                setProducts(response.data);
+            })
+            .catch(error => {
+                setNotification({ message: 'There was an error fetching the data!', type: 'error' });
+            });
     };
 
     const handleSearch = () => {
-        if (searchType === 'name') {
-            setProducts(prevProducts =>
-                prevProducts.filter(product =>
-                    product.name.toLowerCase().includes(searchTerm.toLowerCase())
-                )
-            );
-        } else if (searchType === 'ingredient') {
-            axios.get(`http://localhost:8080/api/ingredient_medicine/searchByIngredient/${searchTerm}`)
+        if (searchTerm.trim() === '') {
+            // Nếu không có từ khóa tìm kiếm, hiển thị lại toàn bộ sản phẩm
+            axios.get('http://localhost:8080/api/medicine/status/selling')
                 .then(response => {
-                    const ingredientMedicines = response.data;
-                    const medicines = ingredientMedicines.map(im => im.medicine);
-                    setProducts(medicines);
+                    setProducts(response.data);
                 })
                 .catch(error => {
                     setNotification({ message: 'There was an error fetching the data!', type: 'error' });
                 });
+        } else {
+            if (searchType === 'name') {
+                setProducts(prevProducts =>
+                    prevProducts.filter(product =>
+                        product.name.toLowerCase().includes(searchTerm.toLowerCase())
+                    )
+                );
+            } else if (searchType === 'ingredient') {
+                axios.get(`http://localhost:8080/api/ingredient_medicine/searchByIngredient/${searchTerm}`)
+                    .then(response => {
+                        const ingredientMedicines = response.data;
+                        const medicines = ingredientMedicines.map(im => im.medicine);
+                        setProducts(medicines);
+                    })
+                    .catch(error => {
+                        setNotification({ message: 'There was an error fetching the data!', type: 'error' });
+                    });
+            }
         }
     };
 
@@ -284,13 +302,17 @@ function Product() {
                         <div className="col-lg-12 text-center">
                             <div className="pagination-wrap">
                                 <ul>
-                                    <li onClick={() => paginate(currentPage - 1)} className={currentPage === 1 ? 'disabled' : ''}><a href="#">Prev</a></li>
+                                    {currentPage > 1 && (
+                                        <li onClick={() => paginate(currentPage - 1)} className={currentPage === 1 ? 'disabled' : ''}><a href="#">Prev</a></li>
+                                    )}
                                     {pageNumbers.map(number => (
                                         <li key={number} onClick={() => paginate(number)} className={currentPage === number ? 'active' : ''}>
                                             <a href="#">{number}</a>
                                         </li>
                                     ))}
-                                    <li onClick={() => paginate(currentPage + 1)} className={currentPage === pageNumbers.length ? 'disabled' : ''}><a href="#">Next</a></li>
+                                    {currentPage < pageNumbers.length && (
+                                        <li onClick={() => paginate(currentPage + 1)} className={currentPage === pageNumbers.length ? 'disabled' : ''}><a href="#">Next</a></li>
+                                    )}
                                 </ul>
                             </div>
                         </div>

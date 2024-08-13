@@ -60,6 +60,7 @@ function App() {
       <Routes>
         {/* User */}
         <Route path='/home' element={<Home />}></Route>
+        <Route path='' element={<Home />}></Route>
         <Route path='/product' element={<Product />}></Route>
         <Route path='/productDetail' element={<ProductDetail />}></Route>
         <Route path='/cart' element={<UserPrivateRoute><Cart /></UserPrivateRoute>}></Route>
@@ -76,6 +77,7 @@ function App() {
 
         {/* Admin */}
         <Route path='/admin/login' element={<LoginAdmin />} />
+        <Route path='/admin' element={<LoginAdmin />} />
         <Route path='/admin/forgotPassword' element={<ForgotPasswordAdmin />} />
         <Route path='/admin/createOrder' element={<PrivateRouteAdmin element={CreateOrderSupplierAdmin} />} />
         <Route path='/admin/createImport' element={<PrivateRouteAdmin element={CreateImportSupplier} />} />

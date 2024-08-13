@@ -40,7 +40,14 @@ function ChangePassword() {
     const handleCurrentPasswordSubmit = async (e) => {
         e.preventDefault();
         const pass = currentPassword.trim();
-        if (pass === account.password) {
+
+        const response = await axios.post(`http://localhost:8080/api/account/verify-password/${account.id}/${pass}`, {}, {
+            headers: {
+                'Authorization': `Bearer ${localStorage.getItem('token')}`
+            }
+        });
+
+        if (response.status === 200) {
             setCurrentForm(2);
         }
         else {

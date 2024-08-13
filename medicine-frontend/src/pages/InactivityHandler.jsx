@@ -18,7 +18,7 @@ const InactivityHandler = () => {
             } else if (roleTemp === 'user') {
                 navigate('/login');
             }
-        }, 30 * 60 * 1000); // 30 minutes
+        }, 10 * 60 * 1000); // 30 minutes
     };
 
     // Check mouse movement
@@ -36,6 +36,18 @@ const InactivityHandler = () => {
             clearTimeout(inactivityTimeout);
         };
     }, []);
+
+    // useEffect(() => {
+    //     const handleBeforeUnload = () => {
+    //         localStorage.clear();
+    //     };
+
+    //     window.addEventListener('beforeunload', handleBeforeUnload);
+
+    //     return () => {
+    //         window.removeEventListener('beforeunload', handleBeforeUnload);
+    //     };
+    // }, []);
     return null;
 };
 

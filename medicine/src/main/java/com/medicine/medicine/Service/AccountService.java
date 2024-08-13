@@ -19,4 +19,6 @@ public interface AccountService {
     public Account loginAdmin(String username, String password);
 
     Account getAccountByEmail(String email);
+
+    boolean verifyCurrentPassword(String accountId, String currentPassword);
 }

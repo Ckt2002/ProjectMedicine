@@ -27,14 +27,21 @@ function AdminChangePassword() {
     const handleVerifyCurrentPassword = async (event) => {
         event.preventDefault();
         try {
-            const response = await axios.get(`http://localhost:8080/api/account/${accountId}`, {
+
+            const responseGetAccount = await axios.get(`http://localhost:8080/api/account/${accountId}`, {
                 headers: {
                     'Authorization': `Bearer ${localStorage.getItem('token')}`
                 }
             });
-            console.log(response.data);
-            setAccount(response.data)
-            if (response.data.password === currentPassword) {
+            setAccount(responseGetAccount.data);
+
+            const response = await axios.post(`http://localhost:8080/api/account/verify-password/${accountId}/${currentPassword}`, {}, {
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`
+                }
+            });
+
+            if (response.status === 200) {
                 setStep(2);
             } else {
                 setNotification({ message: 'Current password is incorrect', type: 'error' });
@@ -51,6 +58,7 @@ function AdminChangePassword() {
             return;
         }
         try {
+            console.log(account);
             const newAccount = {
                 ...account,
                 password: newPassword

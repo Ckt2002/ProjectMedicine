@@ -8,6 +8,9 @@ function AddMedicineAdmin() {
     const [brands, setBrands] = useState([]);
     const [dosageForms, setDosageForms] = useState([]);
     const [manufacturers, setManufacturers] = useState([]);
+    const [ingredients, setIngredients] = useState([]);
+    const [effects, setEffects] = useState([]);
+    const [contraindications, setContraindications] = useState([]);
 
     const [notification, setNotification] = useState({ message: '', type: '' });
 
@@ -27,6 +30,10 @@ function AddMedicineAdmin() {
         status: 'stop'
     });
 
+    const [selectedIngredients, setSelectedIngredients] = useState([]);
+    const [selectedEffects, setSelectedEffects] = useState([]);
+    const [selectedContraindications, setSelectedContraindications] = useState([]);
+
     useEffect(() => {
         if (notification.message) {
             const timer = setTimeout(() => {
@@ -40,29 +47,47 @@ function AddMedicineAdmin() {
     useEffect(() => {
         const fetchData = async () => {
             try {
-                const [medicineTypeResponse, brandResponse, dosageFormResponse, manufacturerResponse] = await Promise.all([
-                    axios.get('http://localhost:8080/api/medicine_type'),
-                    axios.get('http://localhost:8080/api/brand', {
-                        headers: {
-                            'Authorization': `Bearer ${localStorage.getItem('token')}`
-                        }
-                    }),
-                    axios.get('http://localhost:8080/api/dosage_form', {
-                        headers: {
-                            'Authorization': `Bearer ${localStorage.getItem('token')}`
-                        }
-                    }),
-                    axios.get('http://localhost:8080/api/manufacturer', {
-                        headers: {
-                            'Authorization': `Bearer ${localStorage.getItem('token')}`
-                        }
-                    })
-                ]);
-
+                const [medicineTypeResponse, brandResponse, dosageFormResponse, manufacturerResponse,
+                    ingredientResponse, effectResponse, contraindicationResponse] = await Promise.all([
+                        axios.get('http://localhost:8080/api/medicine_type'),
+                        axios.get('http://localhost:8080/api/brand', {
+                            headers: {
+                                'Authorization': `Bearer ${localStorage.getItem('token')}`
+                            }
+                        }),
+                        axios.get('http://localhost:8080/api/dosage_form', {
+                            headers: {
+                                'Authorization': `Bearer ${localStorage.getItem('token')}`
+                            }
+                        }),
+                        axios.get('http://localhost:8080/api/manufacturer', {
+                            headers: {
+                                'Authorization': `Bearer ${localStorage.getItem('token')}`
+                            }
+                        }),
+                        axios.get('http://localhost:8080/api/ingredient', {
+                            headers: {
+                                'Authorization': `Bearer ${localStorage.getItem('token')}`
+                            }
+                        }),
+                        axios.get('http://localhost:8080/api/effect', {
+                            headers: {
+                                'Authorization': `Bearer ${localStorage.getItem('token')}`
+                            }
+                        }),
+                        axios.get('http://localhost:8080/api/contraindicated', {
+                            headers: {
+                                'Authorization': `Bearer ${localStorage.getItem('token')}`
+                            }
+                        })
+                    ]);
                 setMedicineTypes(medicineTypeResponse.data);
                 setBrands(brandResponse.data);
                 setDosageForms(dosageFormResponse.data);
                 setManufacturers(manufacturerResponse.data);
+                setIngredients(ingredientResponse.data);
+                setEffects(effectResponse.data);
+                setContraindications(contraindicationResponse.data);
             } catch (error) {
                 console.error('Error fetching data:', error);
             }
@@ -124,7 +149,6 @@ function AddMedicineAdmin() {
                     }
                 });
             } catch (error) {
-                console.error('Image already exists in folder');
             }
         }
 
@@ -135,13 +159,124 @@ function AddMedicineAdmin() {
                 }
             });
             if (response.status === 201) {
-                setNotification({ message: 'Medicine added successfully', type: 'success' });
+                const medicineId = response.data;
+                console.log(medicineId);
+                // setNotification({ message: 'Medicine added successfully', type: 'success' });
+
+                // Thêm chi tiết ingredient, effect, contraindication cho medicine
+                await addMedicineDetails(medicineId);
             } else {
                 setNotification({ message: response.data, type: 'error' });
             }
         } catch (error) {
             console.error('Error adding medicine:', error);
             setNotification({ message: 'Error adding medicine', type: 'error' });
+        }
+    };
+
+    const addMedicineDetails = async (medicineId) => {
+        try {
+            // Thêm các ingredient đã chọn
+            for (let ingredient of selectedIngredients) {
+                console.log("Medicine: ", medicineId);
+                console.log("Inigredient: ", ingredient.id);
+                await axios.post('http://localhost:8080/api/ingredient_medicine', {
+                    id: {
+                        idMedicine: medicineId,
+                        idIngredient: ingredient.id
+                    },
+                    medicine: { id: medicineId },
+                    ingredient: { id: ingredient.id }
+                }, {
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('token')}`
+                    }
+                });
+            }
+
+            // Thêm các effect đã chọn
+            for (let effect of selectedEffects) {
+                console.log("Effect: ", effect.id);
+                await axios.post('http://localhost:8080/api/effect-medicine', {
+                    id: { effectId: effect.id, medicineId: medicineId },
+                    medicine: { id: medicineId },
+                    effect: { id: effect.id }
+                }, {
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('token')}`
+                    }
+                });
+            }
+
+            // Thêm các contraindication đã chọn
+            for (let contraindication of selectedContraindications) {
+                console.log("Contraindication: ", contraindication.id);
+                await axios.post('http://localhost:8080/api/contraindicated_medicine', {
+                    id: {
+                        contraindicatedId: contraindication.id,
+                        medicineId: medicineId
+                    },
+                    contraindicated: { id: contraindication.id },
+                    medicine: { id: medicineId }
+                }, {
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('token')}`
+                    }
+                });
+            }
+            setNotification({ message: 'Medicine added successfully', type: 'success' });
+        } catch (error) {
+            console.error('Error adding medicine details:', error);
+            setNotification({ message: 'Error adding medicine details', type: 'error' });
+        }
+    };
+
+    const handleSelectChange = (field, value) => {
+        if (value === '') return;
+
+        const numericValue = Number(value);
+        let selectedItem;
+
+        console.log('Ingredients:', ingredients);
+        console.log('Selected Value:', value);
+
+        switch (field) {
+            case 'ingredient':
+                selectedItem = ingredients.find(item => item.id === numericValue);
+                if (selectedItem && !selectedIngredients.some(item => item.id === numericValue)) {
+                    setSelectedIngredients([...selectedIngredients, selectedItem]);
+                }
+                break;
+            case 'effect':
+                selectedItem = effects.find(item => item.id === numericValue);
+                if (selectedItem && !selectedEffects.some(item => item.id === numericValue)) {
+                    setSelectedEffects([...selectedEffects, selectedItem]);
+                }
+                break;
+            case 'contraindication':
+                selectedItem = contraindications.find(item => item.id === numericValue);
+                if (selectedItem && !selectedContraindications.some(item => item.id === numericValue)) {
+                    setSelectedContraindications([...selectedContraindications, selectedItem]);
+                }
+                break;
+            default:
+                break;
+        }
+    };
+
+    const handleDeleteSelected = (field, id) => {
+        switch (field) {
+            case 'ingredient':
+                setSelectedIngredients(selectedIngredients.filter(item => item.id !== id));
+                break;
+            case 'effect':
+                setSelectedEffects(selectedEffects.filter(item => item.id !== id));
+                break;
+            case 'contraindication':
+                setSelectedContraindications(selectedContraindications.filter(item => item.id !== id));
+                break;
+            default:
+                break;
         }
     };
 
@@ -283,6 +418,134 @@ function AddMedicineAdmin() {
                                                         ></textarea>
                                                     </div>
                                                 </div>
+
+                                                <div className="mb-3">
+                                                    <label className="form-label" htmlFor="medicine-ingredient">Ingredient</label>
+                                                    <div style={{
+                                                        display: 'block',
+                                                        marginBottom: '10px',
+                                                        width: '100%'
+                                                    }}>
+                                                        {selectedIngredients.map((item) => (
+                                                            <div key={item.id} style={{
+                                                                display: 'flex', alignItems: 'center', marginBottom: '10px'
+                                                            }}>
+                                                                <input
+                                                                    className="form-control"
+                                                                    id="medicine-ingredient" value={item.name || ''}
+                                                                    readOnly
+                                                                >
+                                                                </input>
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => handleDeleteSelected('ingredient', item.id)}
+                                                                    className="btn btn-danger ml-2"
+                                                                    style={{ margin: '10px' }}
+                                                                >
+                                                                    Delete
+                                                                </button>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                    <select
+                                                        id="medicine-ingredient"
+                                                        className="form-control"
+                                                        onChange={(e) => handleSelectChange('ingredient', e.target.value)}
+                                                    >
+                                                        <option value="">Select Ingredient</option>
+                                                        {ingredients.map((ingredient) => (
+                                                            <option key={ingredient.id} value={ingredient.id}>
+                                                                {ingredient.name}
+                                                            </option>
+                                                        ))}
+                                                    </select>
+                                                </div>
+
+                                                <div className="mb-3">
+                                                    <label className="form-label" htmlFor="medicine-effect">Effect</label>
+                                                    <div style={{
+                                                        display: 'block',
+                                                        marginBottom: '10px',
+                                                        width: '100%'
+                                                    }}>
+                                                        {selectedEffects.map((item) => (
+                                                            <div key={item.id} style={{
+                                                                display: 'flex', alignItems: 'center', marginBottom: '10px'
+                                                            }}>
+                                                                <input
+                                                                    className="form-control"
+                                                                    id="medicine-ingredient" value={item.name || ''}
+                                                                    readOnly
+                                                                >
+                                                                </input>
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => handleDeleteSelected('effect', item.id)}
+                                                                    className="btn btn-danger ml-2"
+                                                                    style={{ margin: '10px' }}
+                                                                >
+                                                                    Delete
+                                                                </button>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                    <select
+                                                        id="medicine-effect"
+                                                        className="form-control"
+                                                        onChange={(e) => handleSelectChange('effect', e.target.value)}
+                                                    >
+                                                        <option value="">Select Effect</option>
+                                                        {effects.map((effect) => (
+                                                            <option key={effect.id} value={effect.id}>
+                                                                {effect.name}
+                                                            </option>
+                                                        ))}
+                                                    </select>
+                                                </div>
+
+                                                <div className="mb-3">
+                                                    <label className="form-label" htmlFor="medicine-contraindication">Contraindication</label>
+                                                    <div style={{
+                                                        display: 'block',
+                                                        marginBottom: '10px',
+                                                        width: '100%'
+                                                    }}>
+                                                        {selectedContraindications.map((item) => (
+                                                            <div key={item.id} style={{
+                                                                display: 'flex', alignItems: 'center', marginBottom: '10px'
+                                                            }}>
+                                                                <input
+                                                                    className="form-control"
+                                                                    id="medicine-ingredient" value={item.name || ''}
+                                                                    readOnly
+                                                                >
+                                                                </input>
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => handleDeleteSelected('contraindication', item.id)}
+                                                                    className="btn btn-danger ml-2"
+                                                                    style={{ margin: '10px' }}
+                                                                >
+                                                                    Delete
+                                                                </button>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                    <select
+                                                        id="medicine-contraindication"
+                                                        className="form-control"
+                                                        onChange={(e) => handleSelectChange('contraindication', e.target.value)}
+                                                    >
+                                                        <option value="">Select Contraindication</option>
+                                                        {contraindications.map((contraindication) => (
+                                                            <option key={contraindication.id} value={contraindication.id}>
+                                                                {contraindication.name}
+                                                            </option>
+                                                        ))}
+                                                    </select>
+
+                                                </div>
+
 
                                                 <button type="button"
                                                     onClick={handleAddMedicine}

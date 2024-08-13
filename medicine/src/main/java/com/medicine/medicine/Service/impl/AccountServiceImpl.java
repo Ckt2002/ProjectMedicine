@@ -5,11 +5,13 @@ import com.medicine.medicine.Entity.CustomUserDetails;
 import com.medicine.medicine.Repository.AccountRepository;
 import com.medicine.medicine.Service.AccountService;
 import com.medicine.medicine.UtilityClass.RandomIdGenerator;
+import com.sun.tools.jconsole.JConsoleContext;
 import lombok.AllArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -21,7 +23,8 @@ public class AccountServiceImpl implements AccountService, UserDetailsService {
 
     @Autowired
     private AccountRepository accountRepository;
-
+    @Autowired
+    private PasswordEncoder passwordEncoder;
 
     @Override
     public List<Account> getAllAccounts()
@@ -42,6 +45,17 @@ public class AccountServiceImpl implements AccountService, UserDetailsService {
         Optional<Account> result = accountRepository.findById(accountToUpdate.getId());
         Account account = result.orElse(null);
         if (account != null){
+
+            // Kiểm tra xem mật khẩu có được thay đổi không
+            if (!passwordEncoder.matches(accountToUpdate.getPassword(), account.getPassword())) {
+                // Nếu có, mã hóa mật khẩu mới trước khi cập nhật
+                String encodedPassword = passwordEncoder.encode(accountToUpdate.getPassword());
+                accountToUpdate.setPassword(encodedPassword);
+            } else {
+                // Nếu mật khẩu không thay đổi, giữ nguyên mật khẩu cũ
+                accountToUpdate.setPassword(account.getPassword());
+            }
+
             accountRepository.save(accountToUpdate);
             return "Update successful";
         }
@@ -58,7 +72,9 @@ public class AccountServiceImpl implements AccountService, UserDetailsService {
         if (accountRepository.findByEmail(account.getEmail()).isPresent()){
             throw new IllegalArgumentException("Email already exists");
         }
+        String encodedPassword = passwordEncoder.encode(account.getPassword());
 
+        account.setPassword(encodedPassword);
         account.setId(RandomIdGenerator.generateRandomId());
         account.setStatus("active");
         account.setRole("user");
@@ -73,7 +89,7 @@ public class AccountServiceImpl implements AccountService, UserDetailsService {
         Optional<Account> accountOpt = accountRepository.findByUsername(username);
         if (accountOpt.isPresent()) {
             Account account = accountOpt.get();
-            if (account.getPassword().equals(password)
+            if (passwordEncoder.matches(password, account.getPassword())
                     && account.getRole().equals("user")
                     && account.getStatus().equals("active")) {
                 return account;
@@ -89,7 +105,7 @@ public class AccountServiceImpl implements AccountService, UserDetailsService {
         Optional<Account> accountOpt = accountRepository.findByUsername(username);
         if (accountOpt.isPresent()) {
             Account account = accountOpt.get();
-            if (account.getPassword().equals(password)
+            if (passwordEncoder.matches(password, account.getPassword())
                     && account.getRole().equals("admin")
                     && account.getStatus().equals("active")) {
                 return account;
@@ -116,5 +132,16 @@ public class AccountServiceImpl implements AccountService, UserDetailsService {
             return new CustomUserDetails(accountOpt.get());
         }
         throw new UsernameNotFoundException("User not found with username: " + username);
+    }
+
+    @Override
+    public boolean verifyCurrentPassword(String accountId, String currentPassword) {
+        Optional<Account> accountOpt = accountRepository.findById(accountId);
+        if (accountOpt.isPresent()) {
+            Account account = accountOpt.get();
+            System.out.println(passwordEncoder.matches(currentPassword, account.getPassword()));
+            return passwordEncoder.matches(currentPassword, account.getPassword());
+        }
+        return false;
     }
 }

@@ -148,4 +148,16 @@ public class AccountController {
             return new ResponseEntity<>(null, HttpStatus.NOT_FOUND);
         }
     }
+
+    @PostMapping("/verify-password/{accountId}/{currentPassword}")
+    public ResponseEntity<?> verifyCurrentPassword(@PathVariable String accountId, @PathVariable String currentPassword) {
+        System.out.println(accountId);
+        System.out.println(currentPassword);
+        boolean isPasswordCorrect = accountService.verifyCurrentPassword(accountId, currentPassword);
+        if (isPasswordCorrect) {
+            return ResponseEntity.ok().build();
+        } else {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Current password is incorrect");
+        }
+    }
 }
